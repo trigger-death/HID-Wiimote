@@ -24,6 +24,20 @@ extern CONST HID_DESCRIPTOR HIDDescriptor;
 extern CONST size_t HIDReportDescriptorSize;
 
 #pragma pack(push, 1)
+typedef struct _HID_DIRECT_REPORT {
+	UCHAR ReportID;
+	UCHAR Data[21];
+} HID_DIRECT_REPORT, *PHID_DIRECT_REPORT;
+
+VOID
+FORCEINLINE
+HID_DIRECT_REPORT_INIT(
+	_Out_ PHID_DIRECT_REPORT Report)
+{
+	RtlZeroMemory(Report, sizeof(HID_DIRECT_REPORT));
+}
+
+#pragma pack(push, 1)
 typedef struct _HID_GAMEPAD_REPORT {
 	UCHAR ReportID;
 	UCHAR XAxis;

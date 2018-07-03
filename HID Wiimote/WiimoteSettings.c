@@ -70,7 +70,7 @@ WiimoteSettingsLoad(
 	}
 
 	// Load each Setting
-	DeviceContext->WiimoteContext.Settings.Mode = Gamepad;
+	DeviceContext->WiimoteContext.Settings.Mode = PassThrough;
 	//LoadWiimoteDriverModeValue(Key, &DriverModeValueName, Gamepad, &DeviceContext->WiimoteContext.Settings.Mode);
 	LoadBooleanValue(Key, &EnableWiimoteXAxisAccelerometerValueName, TRUE, &DeviceContext->WiimoteContext.Settings.EnableWiimoteXAxisAccelerometer);
 	LoadBooleanValue(Key, &EnableWiimoteYAxisAccelerometerValueName, TRUE, &DeviceContext->WiimoteContext.Settings.EnableWiimoteYAxisAcceleromenter);

@@ -64,7 +64,7 @@ HIDCreateQueues(
 	}
 
 	// Create Read Buffer Queue
-	Status = ReadIoControlBufferCreate(&HIDContext->ReadBuffer, DeviceContext->Device, DeviceContext, HIDFillReadBufferCallback, sizeof(HID_GAMEPAD_REPORT));
+	Status = ReadIoControlBufferCreate(&HIDContext->ReadBuffer, DeviceContext->Device, DeviceContext, HIDFillReadBufferCallback, sizeof(HID_DIRECT_REPORT));
 	if (!NT_SUCCESS(Status))
 	{
 		TraceStatus("Creating HID Read Buffer failed", Status);
@@ -95,6 +95,9 @@ HIDInternalDeviceControlCallback(
 	UNREFERENCED_PARAMETER(OutputBufferLength);
 	UNREFERENCED_PARAMETER(InputBufferLength);
 
+	NTSTATUS Status = STATUS_SUCCESS;
+	ULONG_PTR ReadSize = 0;
+
 	switch(IoControlCode)
 	{
 	case IOCTL_HID_GET_DEVICE_DESCRIPTOR:
@@ -110,7 +113,13 @@ HIDInternalDeviceControlCallback(
 		ProcessGetString(Request, GetDeviceContext(WdfIoQueueGetDevice(Queue)));
 		break;
 	case IOCTL_HID_READ_REPORT:
-		ForwardReadReportRequest(Request, GetDeviceContext(WdfIoQueueGetDevice(Queue)));
+		//ForwardReadReportRequest(Request, GetDeviceContext(WdfIoQueueGetDevice(Queue)));
+		Status = BluetoothReadReport(Request, GetDeviceContext(WdfIoQueueGetDevice(Queue)), &ReadSize);
+		WdfRequestComplete(Request, Status);
+		break;
+	case IOCTL_HID_WRITE_REPORT:
+		Status = BluetoothWriteReport(Request, GetDeviceContext(WdfIoQueueGetDevice(Queue)));
+		WdfRequestComplete(Request, Status);
 		break;
 	case IOCTL_WIIMOTE_ADDRESSES:
 		ProcessAddresses(Request, GetDeviceContext(WdfIoQueueGetDevice(Queue)));

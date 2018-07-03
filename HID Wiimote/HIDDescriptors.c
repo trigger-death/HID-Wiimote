@@ -43,7 +43,7 @@ CONST HID_REPORT_DESCRIPTOR HIDReportDescriptor[] = {
 |--------|-------|--------|-------|--------|-------|--------|-------|
 
 */
-	0x85, GAMEPAD_REPORT_ID,	   //   REPORT_ID (GAMEPAD_REPORT_ID)  
+/*	0x85, GAMEPAD_REPORT_ID,	   //   REPORT_ID (GAMEPAD_REPORT_ID)  
 	0x05, 0x01,                    //   USAGE_PAGE (Generic Desktop)
 	0x09, 0x30,                    //   USAGE (X)
 	0x09, 0x31,                    //   USAGE (Y)
@@ -84,13 +84,14 @@ CONST HID_REPORT_DESCRIPTOR HIDReportDescriptor[] = {
 	0x75, 0x08,                    //   REPORT_SIZE (8)
 	0x95, 0x01,                    //   REPORT_COUNT (1)
 	0x81, 0x4a,                    //   INPUT (Data,Var,Abs,Wrap,Null)
+	0xc0                           // END_COLLECTION
+*/
 /*
 				   |-----------------------------|
 				   |		   Wiimote			 |
 				   |-----------------------------|
 */	
-	0xc0                           // END_COLLECTION
-/*
+
 	0x06, 0x00, 0xff,              //   USAGE_PAGE (Vendor Defined)
 	0x09, 0x01,                    //   USAGE (Vendor Ussage 1)
 	0x91, 0x00,                    //   OUTPUT (Data,Ary,Abs)

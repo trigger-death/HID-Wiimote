@@ -59,3 +59,6 @@ NTSTATUS BluetoothCreateRequestAndBuffer(_In_ WDFDEVICE Device, _In_ WDFIOTARGET
 NTSTATUS BluetoothTransferToDevice(_In_ PDEVICE_CONTEXT DeviceContext, _In_ WDFREQUEST Request, _In_ WDFMEMORY Memory, _In_ BOOLEAN Synchronous);
 
 NTSTATUS BluetoothStartContiniousReader(_In_ PDEVICE_CONTEXT DeviceContext);
+
+NTSTATUS BluetoothReadReport(_In_ WDFREQUEST ReadRequest, _In_ PDEVICE_CONTEXT DeviceContext, _Out_ PULONG_PTR ReadSize);
+NTSTATUS BluetoothWriteReport(_In_ WDFREQUEST WriteRequest, _In_ PDEVICE_CONTEXT DeviceContext);
