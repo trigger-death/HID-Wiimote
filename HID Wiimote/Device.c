@@ -60,7 +60,7 @@ DeviceAdd(
 	Status = HIDCreateQueues(Device, DevContext);
 	if(!NT_SUCCESS(Status))
 	{
-		Trace("Device Added Error On CreateQueues Result: 0x%x", Status);
+		TraceStatus("Device Added Error On CreateQueues Result", Status);
 		return Status;
 	}
 

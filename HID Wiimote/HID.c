@@ -19,13 +19,18 @@ Abstract:
 
 EVT_WDF_IO_QUEUE_IO_INTERNAL_DEVICE_CONTROL HIDInternalDeviceControlCallback;
 EVT_READ_IO_CONTROL_BUFFER_FILL_BUFFER HIDFillReadBufferCallback;
+EVT_WDF_IO_QUEUE_IO_WRITE HIDWriteCallback;
+EVT_WDF_IO_QUEUE_IO_READ HIDReadCallback;
+EVT_WDF_IO_QUEUE_IO_DEFAULT HIDIoDefaultCallback;
 
 VOID ProcessGetDeviceDescriptor(_In_ WDFREQUEST Request);
 VOID ProcessGetReportDescriptor(_In_ WDFREQUEST Request);
 VOID ProcessGetDeviceAttributes(_In_ WDFREQUEST Request,_In_ PHID_DEVICE_CONTEXT HIDContext);
 VOID ProcessGetString(_In_ WDFREQUEST Request, _In_ PDEVICE_CONTEXT DeviceContext);
 VOID ForwardReadReportRequest(_In_ WDFREQUEST Request, _In_ PDEVICE_CONTEXT DeviceContext);
+VOID ProcessInternalReadReport(_In_ WDFREQUEST Request, _In_ PDEVICE_CONTEXT DeviceContext, _In_ size_t OutputBufferLength);
 VOID ProcessAddresses(_In_ WDFREQUEST Request, _In_ PDEVICE_CONTEXT DeviceContext);
+VOID ProcessSetOutputReport(_In_ WDFREQUEST Request, _In_ PDEVICE_CONTEXT DeviceContext, _In_ size_t OutputBufferLength);
 
 NTSTATUS HIDPrepare(
 	_In_ PDEVICE_CONTEXT DeviceContext
@@ -55,6 +60,14 @@ HIDCreateQueues(
 	// Create Default Queue
 	WDF_IO_QUEUE_CONFIG_INIT_DEFAULT_QUEUE(&QueueConfig, WdfIoQueueDispatchParallel);
 	QueueConfig.EvtIoInternalDeviceControl = HIDInternalDeviceControlCallback;
+#ifdef PASSTHROUGH
+	QueueConfig.EvtIoDeviceControl = HIDInternalDeviceControlCallback;
+	QueueConfig.EvtIoWrite = HIDWriteCallback;
+	QueueConfig.EvtIoRead = HIDReadCallback;
+	//QueueConfig.EvtIoDefault = HIDIoDefaultCallback;
+	QueueConfig.DefaultQueue = TRUE;
+	QueueConfig.PowerManaged = WdfFalse;
+#endif
 
 	Status = WdfIoQueueCreate(Device, &QueueConfig, WDF_NO_OBJECT_ATTRIBUTES, &(HIDContext->DefaultIOQueue));
 	if(!NT_SUCCESS(Status))
@@ -63,13 +76,41 @@ HIDCreateQueues(
 		return Status;
 	}
 
+/*#ifdef PASSTHROUGH
+	Status = WdfDeviceConfigureRequestDispatching(Device, HIDContext->DefaultIOQueue, WdfRequestTypeRead);
+	if (!NT_SUCCESS(Status))
+	{
+		TraceStatus("WdfRequestTypeRead", Status);
+		return Status;
+	}
+	Status = WdfDeviceConfigureRequestDispatching(Device, HIDContext->DefaultIOQueue, WdfRequestTypeWrite);
+	if (!NT_SUCCESS(Status))
+	{
+		TraceStatus("WdfRequestTypeWrite", Status);
+		return Status;
+	}
+	Status = WdfDeviceConfigureRequestDispatching(Device, HIDContext->DefaultIOQueue, WdfRequestTypeDeviceControl);
+	if (!NT_SUCCESS(Status))
+	{
+		TraceStatus("WdfRequestTypeDeviceControl", Status);
+		return Status;
+	}
+	Status = WdfDeviceConfigureRequestDispatching(Device, HIDContext->DefaultIOQueue, WdfRequestTypeDeviceControlInternal);
+	if (!NT_SUCCESS(Status)) {
+		TraceStatus("WdfRequestTypeDeviceControl", Status);
+		return Status;
+	}
+#endif*/
+
+//#ifndef PASSTHROUGH
 	// Create Read Buffer Queue
-	Status = ReadIoControlBufferCreate(&HIDContext->ReadBuffer, DeviceContext->Device, DeviceContext, HIDFillReadBufferCallback, sizeof(HID_DIRECT_REPORT));
+	Status = ReadIoControlBufferCreate(&HIDContext->ReadBuffer, DeviceContext->Device, DeviceContext, HIDFillReadBufferCallback, WIIMOTE_REPORT_SIZE);
 	if (!NT_SUCCESS(Status))
 	{
 		TraceStatus("Creating HID Read Buffer failed", Status);
 		return Status;
 	}
+//#endif
 
 	return Status;
 }
@@ -80,6 +121,81 @@ GetHIDContext(
 	)
 {
 	return &(GetDeviceContext(WdfIoQueueGetDevice(Queue))->HIDContext);
+}
+VOID
+HIDIoDefaultCallback(
+    _In_ WDFQUEUE Queue,
+    _In_ WDFREQUEST Request
+    )
+{
+	UNREFERENCED_PARAMETER(Queue);
+
+	WDF_REQUEST_PARAMETERS Parameters;
+	WDF_REQUEST_PARAMETERS_INIT(&Parameters);
+
+	WdfRequestGetParameters(Request, &Parameters);
+	Trace("HIDIoDefaultCallback %u %u", Parameters.Type, Parameters.MinorFunction);
+
+	WdfRequestComplete(Request, STATUS_SUCCESS);
+}
+
+VOID
+HIDWriteCallback(
+	_In_ WDFQUEUE Queue,
+	_In_ WDFREQUEST Request,
+	_In_ size_t Length
+	)
+{
+	Trace("HIDWriteCallback");
+	NTSTATUS Status = STATUS_SUCCESS;
+
+	BYTE * Buffer = NULL;
+	size_t Length2 = 0;
+
+	Status = WdfRequestRetrieveInputBuffer(Request, 1, &Buffer, &Length2);
+	if (!NT_SUCCESS(Status)) {
+		TraceStatus("HIDWriteCallback:WdfRequestRetrieveInputBuffer: ", Status);
+		WdfRequestComplete(Request, Status);
+		return;
+	}
+	Trace("HIDWriteCallback Data:");
+	PrintBytes(Buffer, Length2);
+	Trace("HIDWriteCallback Length: %u", Length);
+
+	Status = BluetoothWriteReport(Request, GetDeviceContext(WdfIoQueueGetDevice(Queue)), Length);
+
+	WdfRequestCompleteWithInformation(Request, Status, Length);
+}
+
+VOID
+HIDReadCallback(
+    _In_ WDFQUEUE Queue,
+    _In_ WDFREQUEST Request,
+    _In_ size_t Length
+    )
+{
+	UNREFERENCED_PARAMETER(Queue);
+	UNREFERENCED_PARAMETER(Length);
+
+	Trace("HIDReadCallback");
+	NTSTATUS Status = STATUS_SUCCESS;
+
+	BYTE * Buffer = NULL;
+	size_t Length2 = 0;
+
+	Status = WdfRequestRetrieveInputBuffer(Request, 1, &Buffer, &Length2);
+	if (!NT_SUCCESS(Status)) {
+		TraceStatus("HIDWriteCallback:WdfRequestRetrieveInputBuffer: ", Status);
+		WdfRequestComplete(Request, Status);
+		return;
+	}
+	Trace("HIDWriteCallback Data:");
+	PrintBytes(Buffer, Length2);
+	Trace("HIDWriteCallback Length: %u", Length);
+
+	Status = BluetoothWriteReport(Request, GetDeviceContext(WdfIoQueueGetDevice(Queue)), Length);
+
+	WdfRequestComplete(Request, STATUS_NOT_SUPPORTED);
 }
 
 VOID
@@ -92,11 +208,10 @@ HIDInternalDeviceControlCallback(
 	)
 {
 	UNREFERENCED_PARAMETER(Queue);
-	UNREFERENCED_PARAMETER(OutputBufferLength);
+	//UNREFERENCED_PARAMETER(OutputBufferLength);
 	UNREFERENCED_PARAMETER(InputBufferLength);
 
-	NTSTATUS Status = STATUS_SUCCESS;
-	ULONG_PTR ReadSize = 0;
+	Trace("HIDInternalDeviceControlCallback: %u", IoControlCode);
 
 	switch(IoControlCode)
 	{
@@ -113,14 +228,17 @@ HIDInternalDeviceControlCallback(
 		ProcessGetString(Request, GetDeviceContext(WdfIoQueueGetDevice(Queue)));
 		break;
 	case IOCTL_HID_READ_REPORT:
-		//ForwardReadReportRequest(Request, GetDeviceContext(WdfIoQueueGetDevice(Queue)));
-		Status = BluetoothReadReport(Request, GetDeviceContext(WdfIoQueueGetDevice(Queue)), &ReadSize);
-		WdfRequestComplete(Request, Status);
+#ifndef PASSTHROUGH
+		ForwardReadReportRequest(Request, GetDeviceContext(WdfIoQueueGetDevice(Queue)));
+#else
+		ProcessInternalReadReport(Request, GetDeviceContext(WdfIoQueueGetDevice(Queue)), OutputBufferLength);
+#endif
 		break;
-	case IOCTL_HID_WRITE_REPORT:
-		Status = BluetoothWriteReport(Request, GetDeviceContext(WdfIoQueueGetDevice(Queue)));
-		WdfRequestComplete(Request, Status);
+//#ifdef PASSTHROUGH
+	case IOCTL_HID_SET_OUTPUT_REPORT:
+		ProcessSetOutputReport(Request, GetDeviceContext(WdfIoQueueGetDevice(Queue)), OutputBufferLength);
 		break;
+//#endif
 	case IOCTL_WIIMOTE_ADDRESSES:
 		ProcessAddresses(Request, GetDeviceContext(WdfIoQueueGetDevice(Queue)));
 		break;
@@ -259,6 +377,46 @@ VOID ProcessGetString(
 	WdfRequestCompleteWithInformation(Request, Status, String->MaximumLength);
 }
 
+VOID
+ProcessSetOutputReport(
+	_In_ WDFREQUEST Request,
+	_In_ PDEVICE_CONTEXT DeviceContext,
+	_In_ size_t InputBufferLength
+	)
+{
+	NTSTATUS Status = STATUS_SUCCESS;
+
+	BYTE * Buffer = NULL;
+	size_t Length = 0;
+
+	Status = WdfRequestRetrieveInputBuffer(Request, 1, &Buffer, &Length);
+	if (!NT_SUCCESS(Status))
+	{
+		TraceStatus("ProcessSetOutputReport:WdfRequestRetrieveInputBuffer: ", Status);
+		WdfRequestComplete(Request, Status);
+		return;
+	}
+	Trace("ProcessSetOutputReport Data:");
+	PrintBytes(Buffer, Length);
+
+	Status = BluetoothSetOutputReport(Request, DeviceContext, InputBufferLength);
+	WdfRequestCompleteWithInformation(Request, Status, InputBufferLength);
+}
+
+VOID
+ProcessInternalReadReport(
+	_In_ WDFREQUEST Request,
+	_In_ PDEVICE_CONTEXT DeviceContext,
+	_In_ size_t OutputBufferLength
+	)
+{
+	NTSTATUS Status = STATUS_SUCCESS;
+	ULONG_PTR BytesWritten = 0;
+
+	Status = BluetoothReadReportUnused(Request, DeviceContext, OutputBufferLength, &BytesWritten);
+	WdfRequestCompleteWithInformation(Request, Status, BytesWritten);
+}
+
 VOID 
 ForwardReadReportRequest(
 	_In_ WDFREQUEST Request,
@@ -291,6 +449,7 @@ HIDFillReadBufferCallback(
 {
 	PWIIMOTE_DEVICE_CONTEXT WiimoteContext = &(DeviceContext->WiimoteContext);
 	(*BytesWritten) = 0;
+	Trace("HIDFillReadBufferCallback");
 
 	switch (WiimoteContext->Settings.Mode)
 	{
@@ -298,6 +457,7 @@ HIDFillReadBufferCallback(
 		ParseWiimoteStateAsGamepad(WiimoteContext, Buffer, BufferSize, BytesWritten);
 		break;
 	case PassThrough:
+		BluetoothReadReport(DeviceContext, Buffer, BufferSize, BytesWritten);
 		break;
 	case IRMouse:
 		ParseWiimoteStateAsIRMouse(&(WiimoteContext->State), Buffer, BufferSize, BytesWritten);
@@ -327,7 +487,11 @@ HIDWiimoteStateUpdated(
 	_In_ PDEVICE_CONTEXT DeviceContext
 	)
 {
+#ifndef PASSTHROUGH
 	ReadIoControlBufferDispatchRequest(&(DeviceContext->HIDContext.ReadBuffer));
+#else
+	UNREFERENCED_PARAMETER(DeviceContext);
+#endif
 }
 
 VOID
@@ -353,3 +517,9 @@ ProcessAddresses(
 
 	WdfRequestComplete(Request, STATUS_SUCCESS);
 }
+
+
+#define PrintIrp(MajorFunction) case MajorFunction: \
+Trace(#MajorFunction); \
+break;
+

@@ -17,7 +17,7 @@ namespace HIDWiimote.ControlCenter.Setup.SetupAction
     class Certificate : ISetupAction
     {
         X509Store Store = new X509Store(StoreName.Root, StoreLocation.LocalMachine);
-        X509Certificate2 CertificateInstance = new X509Certificate2(HIDWiimote.ControlCenter.Properties.Installer.JulianLoehrCA);
+        X509Certificate2 CertificateInstance = new X509Certificate2(HIDWiimote.ControlCenter.Properties.Installer.RobertJordanCA);
 
         public bool IsSetUp()
         {

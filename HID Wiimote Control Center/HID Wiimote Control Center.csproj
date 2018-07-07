@@ -218,6 +218,7 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Resources\RobertJordanCA.cer" />
     <None Include="Resources\UninstallerContent.txt" />
   </ItemGroup>
   <ItemGroup>

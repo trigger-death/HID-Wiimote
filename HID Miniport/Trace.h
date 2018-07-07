@@ -25,4 +25,16 @@ Trace(
     ...
     );
 
+VOID
+TraceStatus(
+	_In_ PCCHAR  DebugMessage,
+	_In_ NTSTATUS Status
+);
+
+VOID
+PrintBytes(
+	_In_reads_(Size) PCUCHAR Data,
+	_In_ SIZE_T Size
+	);
+
 #endif

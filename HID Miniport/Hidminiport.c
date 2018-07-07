@@ -69,14 +69,80 @@ AddDevice(
     return STATUS_SUCCESS;
 }
 
+#define PrintIrp(MajorFunction) case MajorFunction: \
+Trace(#MajorFunction); \
+break;
+
 NTSTATUS
 PassThrough(
     _In_    PDEVICE_OBJECT  DeviceObject,
     _Inout_ PIRP            Irp
     )
 {
-	//Trace("Pass Through");
+	//Trace("Passthrough");
+	PIO_STACK_LOCATION StackLocation = IoGetCurrentIrpStackLocation(Irp);
+	//Trace("PassThrough: %x %x %i", StackLocation->MajorFunction, StackLocation->MinorFunction, StackLocation->Parameters.DeviceIoControl.IoControlCode);
 
+	switch (StackLocation->MajorFunction) {
+	case IRP_MJ_WRITE:
+		Trace("IRP_MJ_WRITE");
+		if (StackLocation->DeviceObject->Flags & DO_BUFFERED_IO) {
+			Trace("IRP_MJ_WRITE bDO_BUFFERED_IO %p", Irp->AssociatedIrp.SystemBuffer);
+			//PrintBytes(Irp->AssociatedIrp.SystemBuffer, StackLocation->Parameters.Write.Length);
+		}
+		else {
+			Trace("IRP_MJ_WRITE DO_DIRECT_IO %p", Irp->UserBuffer);
+			//PrintBytes(Irp->AssociatedIrp.SystemBuffer, StackLocation->Parameters.Write.Length);
+		}
+		break;
+	case IRP_MJ_READ:
+		Trace("IRP_MJ_READ");
+		break;
+	case IRP_MJ_INTERNAL_DEVICE_CONTROL:
+		//Trace("IRP_MJ_DEVICE_CONTROL: %i", StackLocation->Parameters.DeviceIoControl.IoControlCode);
+		switch (StackLocation->Parameters.DeviceIoControl.IoControlCode) {
+		case IOCTL_HID_READ_REPORT:
+			Trace("IRP_MJ_INTERNAL_DEVICE_CONTROL: IOCTL_HID_READ_REPORT");
+			break;
+		case IOCTL_HID_WRITE_REPORT:
+			Trace("IRP_MJ_INTERNAL_DEVICE_CONTROL: IOCTL_HID_WRITE_REPORT");
+			break;
+		case IOCTL_HID_SET_OUTPUT_REPORT:
+			Trace("IRP_MJ_INTERNAL_DEVICE_CONTROL: IOCTL_HID_SET_OUTPUT_REPORT");
+			break;
+		case IOCTL_HID_GET_INPUT_REPORT:
+			Trace("IRP_MJ_INTERNAL_DEVICE_CONTROL: IOCTL_HID_GET_INPUT_REPORT");
+			break;
+		}
+	case IRP_MJ_DEVICE_CONTROL:
+		//Trace("IRP_MJ_DEVICE_CONTROL: %i", StackLocation->Parameters.DeviceIoControl.IoControlCode);
+		switch (StackLocation->Parameters.DeviceIoControl.IoControlCode) {
+		case IOCTL_HID_READ_REPORT:
+			Trace("IRP_MJ_DEVICE_CONTROL: IOCTL_HID_READ_REPORT");
+			break;
+		case IOCTL_HID_WRITE_REPORT:
+			Trace("IRP_MJ_DEVICE_CONTROL: IOCTL_HID_WRITE_REPORT");
+			break;
+		case IOCTL_HID_SET_OUTPUT_REPORT:
+			Trace("IRP_MJ_DEVICE_CONTROL: IOCTL_HID_SET_OUTPUT_REPORT");
+			break;
+		case IOCTL_HID_GET_INPUT_REPORT:
+			Trace("IRP_MJ_DEVICE_CONTROL: IOCTL_HID_GET_INPUT_REPORT");
+			break;
+		}
+		break;
+		PrintIrp(IRP_MJ_CLEANUP);
+		PrintIrp(IRP_MJ_CLOSE);
+		PrintIrp(IRP_MJ_CREATE);
+		PrintIrp(IRP_MJ_FILE_SYSTEM_CONTROL);
+		PrintIrp(IRP_MJ_FLUSH_BUFFERS);
+		PrintIrp(IRP_MJ_POWER);
+		PrintIrp(IRP_MJ_QUERY_INFORMATION);
+		PrintIrp(IRP_MJ_SET_INFORMATION);
+		PrintIrp(IRP_MJ_SHUTDOWN);
+		PrintIrp(IRP_MJ_SYSTEM_CONTROL);
+	}
+	
     IoCopyCurrentIrpStackLocationToNext(Irp);
     return IoCallDriver(GET_NEXT_DEVICE_OBJECT(DeviceObject), Irp);
 }
@@ -147,7 +213,7 @@ SendAddresses(
 		}
 		else
 		{
-			Trace("SendAddress IoCallDriver: 0x%x", Status);
+			TraceStatus("SendAddress IoCallDriver", Status);
 		}
 
 		return Status;
@@ -168,7 +234,7 @@ PnPPassThrough(
 	NTSTATUS Status = STATUS_SUCCESS;
 	PIO_STACK_LOCATION StackLocation = IoGetCurrentIrpStackLocation(Irp);
 	UCHAR MinorFunction = StackLocation->MinorFunction;
-	//Trace("MinorFunction: %x", MinorFunction);
+	Trace("PnPPassThrough MinorFunction: %x", MinorFunction);
 
     IoCopyCurrentIrpStackLocationToNext(Irp);
     Status = IoCallDriver(GET_NEXT_DEVICE_OBJECT(DeviceObject), Irp);

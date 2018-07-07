@@ -23,8 +23,10 @@ WiimotePrepare(
 	)
 {
 	NTSTATUS Status = STATUS_SUCCESS;
-	//WDF_TIMER_CONFIG TimerConfig;
-	//WDF_OBJECT_ATTRIBUTES TimerAttributes;
+#ifndef PASSTHROUGH
+	WDF_TIMER_CONFIG TimerConfig;
+	WDF_OBJECT_ATTRIBUTES TimerAttributes;
+#endif
 
 	// Reset Device
 	WiimoteReset(DeviceContext);
@@ -32,8 +34,9 @@ WiimotePrepare(
 	// Load Settings from Registry
 	WiimoteSettingsLoad(DeviceContext);
 
+#ifndef PASSTHROUGH
 	// Create Timer to request StatusInformation
-	/*WDF_TIMER_CONFIG_INIT_PERIODIC(&TimerConfig, BatteryLevelLEDUpdateTimerExpired, WIIMOTE_STATUSINFORMATION_INTERVAL);
+	WDF_TIMER_CONFIG_INIT_PERIODIC(&TimerConfig, BatteryLevelLEDUpdateTimerExpired, WIIMOTE_STATUSINFORMATION_INTERVAL);
 	WDF_OBJECT_ATTRIBUTES_INIT(&TimerAttributes);
 	TimerAttributes.ParentObject = DeviceContext->Device;
 	
@@ -41,7 +44,8 @@ WiimotePrepare(
 	if(!NT_SUCCESS(Status))
 	{
 		return Status;
-	}*/
+	}
+#endif
 
 	return Status;
 }
@@ -290,9 +294,10 @@ WiimoteStart(
 	NTSTATUS Status = STATUS_SUCCESS;
 
 	//Set LEDs
-	Status = SetLEDs(DeviceContext, WIIMOTE_LEDS_ONE | WIIMOTE_LEDS_FOUR);
+	Status = SetLEDs(DeviceContext, WIIMOTE_LEDS_ALL);
 	if(!NT_SUCCESS(Status))
 	{
+		TraceStatus("SetLEDs Failed", Status);
 		return Status;
 	}
 
@@ -314,16 +319,18 @@ WiimoteStart(
 	}
 #endif
 
+#ifndef PASSTHROUGH
 	//Start Continious Reader
-	/*Status = BluetoothStartContiniousReader(DeviceContext);
+	Status = BluetoothStartContiniousReader(DeviceContext);
 	if(!NT_SUCCESS(Status))
 	{
 		TraceStatus("StartContiniousReader Failed", Status);
 		return Status;
-	}*/
+	}
 
 	//Start Timer
-	//WdfTimerStart(DeviceContext->WiimoteContext.BatteryLevelLEDUpdateTimer, WDF_REL_TIMEOUT_IN_SEC(1));
+	WdfTimerStart(DeviceContext->WiimoteContext.BatteryLevelLEDUpdateTimer, WDF_REL_TIMEOUT_IN_SEC(1));
+#endif
 
 	return Status;
 }
@@ -422,8 +429,10 @@ WiimoteStop(
 {
 	NTSTATUS Status = STATUS_SUCCESS;
 
+#ifndef PASSTHROUGH
 	//Stop Timer
-	//WdfTimerStop(DeviceContext->WiimoteContext.BatteryLevelLEDUpdateTimer, TRUE);
+	WdfTimerStop(DeviceContext->WiimoteContext.BatteryLevelLEDUpdateTimer, TRUE);
+#endif
 
 	//Shut down Wiimote
 	Status = SuspendWiimote(DeviceContext);
@@ -464,10 +473,10 @@ UpdateBatteryLEDs(
 		return Status;
 	}
 
-	/*if (DeviceContext->WiimoteContext.LEDState == WIIMOTE_LEDS_FOUR)
+	if (DeviceContext->WiimoteContext.LEDState == WIIMOTE_LEDS_FOUR)
 	{
 		WdfTimerStop(WiimoteContext->BatteryLevelLEDUpdateTimer, FALSE);
-	}*/
+	}
 
 	return Status;
 }
@@ -506,17 +515,17 @@ ProcessWiimoteBatteryLevel(
 	_In_ BYTE BatteryLevel
 	)
 {
-	//NTSTATUS Status = STATUS_SUCCESS;
-
 	Trace("BatteryLevel: 0x%x", BatteryLevel);
 
 	DeviceContext->WiimoteContext.BatteryLevel = BatteryLevel;
 
-	/*Status = UpdateBatteryLEDs(DeviceContext); 
+#ifndef PASSTHROUGH
+	NTSTATUS Status = UpdateBatteryLEDs(DeviceContext); 
 	if (!NT_SUCCESS(Status))
 	{
 		return Status;
-	}*/
+	}
+#endif
 
 	return STATUS_SUCCESS;
 }
@@ -847,11 +856,11 @@ BatteryLevelLEDUpdateTimerExpired(
 
 	if (DeviceContext->WiimoteContext.Extension == WiiUProController)
 	{
-		/*Status = UpdateBatteryLEDs(DeviceContext);
+		Status = UpdateBatteryLEDs(DeviceContext);
 		if (!NT_SUCCESS(Status))
 		{
 			return;
-		}*/
+		}
 	}
 	else
 	{

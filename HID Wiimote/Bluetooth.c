@@ -845,12 +845,15 @@ BluetoothStartContiniousReader(
 }
 
 NTSTATUS
-BluetoothReadReport(
+BluetoothReadReportUnused(
 	_In_ WDFREQUEST ReadRequest,
 	_In_ PDEVICE_CONTEXT DeviceContext,
-	_Out_ PULONG_PTR ReadSize
+	_In_ size_t BufferSize,
+	_Out_ PULONG_PTR BytesWritten
 	)
 {
+	UNREFERENCED_PARAMETER(BufferSize);
+
 	CONST size_t ReadBufferSize = 50;
 	NTSTATUS Status = STATUS_SUCCESS;
 	WDFREQUEST Request;
@@ -907,11 +910,20 @@ BluetoothReadReport(
 		return Status;
 	}
 
+	//ReadBuffer = (PVOID)((BYTE*)BRB->Buffer + 1);
+	//*BytesWritten = (ReadBufferSize - BRB->RemainingBufferSize - 1);
+
+
+	Trace("BluetoothReadReport Data: %u", (ReadBufferSize - BRB->RemainingBufferSize));
+	PrintBytes(BRB->Buffer, ReadBufferSize - BRB->RemainingBufferSize);
+
+	// Don't copy the first byte (A1)
 	ReadBuffer = (PVOID)((BYTE*)BRB->Buffer + 1);
-	*ReadSize = (ReadBufferSize - BRB->RemainingBufferSize - 1);
+	*BytesWritten = min(BufferSize, (ReadBufferSize - BRB->RemainingBufferSize - 1));
+	PrintBytes(ReadBuffer, *BytesWritten);
 
 	// Copy the read memory to the read request
-	Status = WdfMemoryCopyFromBuffer(Memory, 0, ReadBuffer, (size_t)(*ReadSize));
+	Status = WdfMemoryCopyFromBuffer(Memory, 0, ReadBuffer, (size_t)(*BytesWritten));
 	if(!NT_SUCCESS(Status))
 	{
 		CleanUpCompletedRequest(Request, DeviceContext->IoTarget, BRB);
@@ -923,10 +935,97 @@ BluetoothReadReport(
 	return Status;
 }
 
+NTSTATUS
+BluetoothReadReport(
+	_In_ PDEVICE_CONTEXT DeviceContext,
+	_Inout_updates_all_(BufferSize) PVOID Buffer,
+	_In_ size_t BufferSize,
+	_Out_ PSIZE_T BytesWritten
+	)
+{
+	CONST size_t ReadBufferSize = 50;
+	NTSTATUS Status = STATUS_SUCCESS;
+	WDFREQUEST Request;
+	WDFMEMORY Memory;
+	PBRB_L2CA_ACL_TRANSFER BRB;
+	PBLUETOOTH_DEVICE_CONTEXT BluetoothContext = &(DeviceContext->BluetoothContext);
+	PVOID ReadBuffer = NULL;
+
+	//Create Report And Buffer
+	Status = BluetoothCreateRequestAndBuffer(DeviceContext->Device, DeviceContext->IoTarget, ReadBufferSize, &Request, &Memory, &ReadBuffer);
+	if (!NT_SUCCESS(Status))
+	{
+		TraceStatus("CreateRequestAndBuffer Failed", Status);
+		return Status;
+	}
+
+	// Safe the Buffer Size
+	BluetoothContext->ReadBufferSize = ReadBufferSize;
+
+	// Create BRB
+	BRB = (PBRB_L2CA_ACL_TRANSFER)BluetoothContext->ProfileDriverInterface.BthAllocateBrb(BRB_L2CA_ACL_TRANSFER, BLUETOOTH_POOL_TAG);
+	if (BRB == NULL)
+	{
+		WdfObjectDelete(Request);
+		return STATUS_INSUFFICIENT_RESOURCES;
+	}
+
+	if (BluetoothContext->InterruptChannelHandle == NULL)
+	{
+		WdfObjectDelete(Request);
+		return STATUS_INVALID_HANDLE;
+	}
+
+	BRB->BtAddress = BluetoothContext->DeviceAddress;
+	BRB->ChannelHandle = BluetoothContext->InterruptChannelHandle;
+	BRB->TransferFlags = ACL_TRANSFER_DIRECTION_IN | ACL_SHORT_TRANSFER_OK;
+	BRB->BufferMDL = NULL;
+	BRB->Buffer = ReadBuffer;
+	BRB->BufferSize = (ULONG)ReadBufferSize;
+
+	Status = SendBRBSynchronous(DeviceContext, Request, (PBRB)BRB);
+	if(!NT_SUCCESS(Status))
+	{
+		BluetoothContext->ProfileDriverInterface.BthFreeBrb((PBRB)BRB);
+		TraceStatus("SendBRB Failed", Status);
+		return Status;
+	}
+
+	// Retrieve the memory to copy the output to
+	/*Status = WdfRequestRetrieveOutputMemory(ReadRequest, &Memory);
+	if(!NT_SUCCESS(Status))
+	{
+		CleanUpCompletedRequest(Request, DeviceContext->IoTarget, BRB);
+		return Status;
+	}*/
+
+	Trace("BluetoothReadReport Data: %u", (ReadBufferSize - BRB->RemainingBufferSize));
+	PrintBytes(BRB->Buffer, ReadBufferSize - BRB->RemainingBufferSize);
+
+	// Don't copy the first byte (A1)
+	ReadBuffer = (PVOID)((BYTE*)BRB->Buffer + 1);
+	*BytesWritten = min(BufferSize, (ReadBufferSize - BRB->RemainingBufferSize - 1));
+	RtlCopyMemory(Buffer, ReadBuffer, *BytesWritten);
+	PrintBytes(Buffer, *BytesWritten);
+
+	// Copy the read memory to the read request
+	/*Status = WdfMemoryCopyFromBuffer(Memory, 0, ReadBuffer, (size_t)(*BytesWritten));
+	if(!NT_SUCCESS(Status))
+	{
+		CleanUpCompletedRequest(Request, DeviceContext->IoTarget, BRB);
+		return Status;
+	}*/
+
+	CleanUpCompletedRequest(Request, DeviceContext->IoTarget, BRB);
+
+	return Status;
+}
+
 NTSTATUS 
-BluetoothWriteReport(
+BluetoothSetOutputReport(
 	_In_ WDFREQUEST WriteRequest,
-	_In_ PDEVICE_CONTEXT DeviceContext
+	_In_ PDEVICE_CONTEXT DeviceContext,
+	_In_ size_t InputBufferLength
 	)
 {
 	NTSTATUS Status = STATUS_SUCCESS;
@@ -943,29 +1042,34 @@ BluetoothWriteReport(
 	size_t WriteLength;
 	WDFMEMORY WriteMemory;
 
-	Status = WdfRequestRetrieveInputBuffer(WriteRequest, 22, &WriteData, &WriteLength);
+	Status = WdfRequestRetrieveInputBuffer(WriteRequest, min(22, InputBufferLength), &WriteData, &WriteLength);
 	if (!NT_SUCCESS(Status))
 	{
+		TraceStatus("BluetoothSetOutputReport:WdfRequestRetrieveInputBuffer: ", Status);
 		return Status;
 	}
 
 	Status = WdfRequestRetrieveInputMemory(WriteRequest, &WriteMemory);
 	if (!NT_SUCCESS(Status))
 	{
+		TraceStatus("BluetoothSetOutputReport:WdfRequestRetrieveInputMemory: ", Status);
 		return Status;
 	}
 
 	Status = BluetoothCreateRequestAndBuffer(DeviceContext->Device, DeviceContext->IoTarget, WriteBufferSize, &Request, &Memory, (PVOID *)&Data);
-	if (!NT_SUCCESS(Status)) {
+	if (!NT_SUCCESS(Status))
+	{
+		TraceStatus("BluetoothSetOutputReport:BluetoothCreateRequestAndBuffer: ", Status);
 		return Status;
 	}
 
 	// Fill Buffer
 	Data[0] = 0xA2;	//HID Output Report
 
-	Status = WdfMemoryCopyToBuffer(WriteMemory, 0, Data, WriteLength);
+	Status = WdfMemoryCopyToBuffer(WriteMemory, 0, Data + 1, min(22, WriteLength));
 	if (!NT_SUCCESS(Status))
 	{
+		TraceStatus("BluetoothSetOutputReport:WdfMemoryCopyToBuffer: ", Status);
 		return Status;
 	}
 	
@@ -992,6 +1096,81 @@ BluetoothWriteReport(
 	CleanUpCompletedRequest(Request, DeviceContext->IoTarget, BRBTransfer);
 	if(!NT_SUCCESS(Status))
 	{
+		TraceStatus("BluetoothSetOutputReport:SendBRBSynchronous: ", Status);
+		return Status;
+	}
+
+	return Status;
+}
+
+
+NTSTATUS 
+BluetoothWriteReport(
+	_In_ WDFREQUEST WriteRequest,
+	_In_ PDEVICE_CONTEXT DeviceContext,
+	_In_ size_t WriteLength
+	)
+{
+	NTSTATUS Status = STATUS_SUCCESS;
+	PBLUETOOTH_DEVICE_CONTEXT BluetoothContext = &(DeviceContext->BluetoothContext);
+	PBRB_L2CA_ACL_TRANSFER BRBTransfer;
+	size_t BufferSize;
+
+	CONST size_t WriteBufferSize = 23;
+	WDFREQUEST Request;
+	WDFMEMORY Memory;
+	BYTE * Data;
+
+	WDFMEMORY WriteMemory;
+
+	Status = WdfRequestRetrieveInputMemory(WriteRequest, &WriteMemory);
+	if (!NT_SUCCESS(Status))
+	{
+		TraceStatus("BluetoothWriteReport:WdfRequestRetrieveInputMemory: ", Status);
+		return Status;
+	}
+
+	Status = BluetoothCreateRequestAndBuffer(DeviceContext->Device, DeviceContext->IoTarget, WriteBufferSize, &Request, &Memory, (PVOID *)&Data);
+	if (!NT_SUCCESS(Status))
+	{
+		TraceStatus("BluetoothWriteReport:BluetoothCreateRequestAndBuffer: ", Status);
+		return Status;
+	}
+
+	// Fill Buffer
+	Data[0] = 0xA2;	//HID Output Report
+
+	Status = WdfMemoryCopyToBuffer(WriteMemory, 0, Data + 1, min(22, WriteLength));
+	if (!NT_SUCCESS(Status))
+	{
+		TraceStatus("BluetoothWriteReport:WdfMemoryCopyToBuffer: ", Status);
+		return Status;
+	}
+	
+	if(BluetoothContext->InterruptChannelHandle == NULL)
+	{
+		return STATUS_INVALID_HANDLE;
+	}
+
+	// Now get an BRB and fill it
+	BRBTransfer = (PBRB_L2CA_ACL_TRANSFER)BluetoothContext->ProfileDriverInterface.BthAllocateBrb(BRB_L2CA_ACL_TRANSFER, BLUETOOTH_POOL_TAG);
+	if (BRBTransfer == NULL)
+	{
+		return STATUS_INSUFFICIENT_RESOURCES;
+	}
+
+	BRBTransfer->BtAddress = BluetoothContext->DeviceAddress;
+	BRBTransfer->ChannelHandle = BluetoothContext->InterruptChannelHandle;
+	BRBTransfer->TransferFlags = ACL_TRANSFER_DIRECTION_OUT;
+	BRBTransfer->BufferMDL = NULL;
+	BRBTransfer->Buffer = WdfMemoryGetBuffer(Memory, &BufferSize);
+	BRBTransfer->BufferSize = (ULONG)BufferSize;
+
+	Status = SendBRBSynchronous(DeviceContext, Request, (PBRB)BRBTransfer);
+	CleanUpCompletedRequest(Request, DeviceContext->IoTarget, BRBTransfer);
+	if(!NT_SUCCESS(Status))
+	{
+		TraceStatus("BluetoothWriteReport:SendBRBSynchronous: ", Status);
 		return Status;
 	}
 

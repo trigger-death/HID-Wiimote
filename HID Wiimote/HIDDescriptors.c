@@ -12,9 +12,7 @@ Abstract:
 #include "HIDDescriptors.h"
 
 CONST HID_REPORT_DESCRIPTOR HIDReportDescriptor[] = {
-	0x05, 0x01,                    // USAGE_PAGE (Generic Desktop)
-	0x09, 0x05,                    // USAGE (Game Pad)
-	0xa1, 0x01,                    // COLLECTION (Application)
+#if defined(GAMEPAD)
 /*
 				   |-----------------------------|
 				   |		   Gamepad			 |
@@ -43,7 +41,10 @@ CONST HID_REPORT_DESCRIPTOR HIDReportDescriptor[] = {
 |--------|-------|--------|-------|--------|-------|--------|-------|
 
 */
-/*	0x85, GAMEPAD_REPORT_ID,	   //   REPORT_ID (GAMEPAD_REPORT_ID)  
+	0x05, 0x01,                    // USAGE_PAGE (Generic Desktop)
+	0x09, 0x05,                    // USAGE (Game Pad)
+	0xa1, 0x01,                    // COLLECTION (Application)
+	0x85, GAMEPAD_REPORT_ID,	   //   REPORT_ID (GAMEPAD_REPORT_ID)  
 	0x05, 0x01,                    //   USAGE_PAGE (Generic Desktop)
 	0x09, 0x30,                    //   USAGE (X)
 	0x09, 0x31,                    //   USAGE (Y)
@@ -85,14 +86,20 @@ CONST HID_REPORT_DESCRIPTOR HIDReportDescriptor[] = {
 	0x95, 0x01,                    //   REPORT_COUNT (1)
 	0x81, 0x4a,                    //   INPUT (Data,Var,Abs,Wrap,Null)
 	0xc0                           // END_COLLECTION
-*/
+
+#elif defined(PASSTHROUGH)
 /*
 				   |-----------------------------|
 				   |		   Wiimote			 |
 				   |-----------------------------|
 */	
 
+	0x05, 0x01,                    // USAGE_PAGE (Generic Desktop)
+	0x09, 0x05,                    // USAGE (Game Pad)
+	0xa1, 0x01,                    // COLLECTION (Application)
 	0x06, 0x00, 0xff,              //   USAGE_PAGE (Vendor Defined)
+	0x85, 0x10,                    //   REPORT_ID (10)
+	0x95, 0x01,                    //   REPORT_COUNT (0)
 	0x09, 0x01,                    //   USAGE (Vendor Ussage 1)
 	0x91, 0x00,                    //   OUTPUT (Data,Ary,Abs)
 	0x85, 0x11,                    //   REPORT_ID (11)
@@ -191,7 +198,9 @@ CONST HID_REPORT_DESCRIPTOR HIDReportDescriptor[] = {
 	0x95, 0x15,                    //   REPORT_COUNT (21)
 	0x09, 0x01,                    //   USAGE (Vendor Ussage 1)
 	0x81, 0x00,                    //   INPUT (Data,Ary,Abs)
-	0xc0,                          // END_COLLECTION
+	0xc0                           // END_COLLECTION
+
+#elif defined(MOUSE_IR)
 /*
 				   |-----------------------------|
 				   |		  IR-Mouse			 |
@@ -211,7 +220,7 @@ CONST HID_REPORT_DESCRIPTOR HIDReportDescriptor[] = {
 |								Y-Axis								|
 |--------|-------|--------|-------|--------|-------|--------|-------|
 */
-/*
+
 	0x05, 0x01,                    // USAGE_PAGE (Generic Desktop)
 	0x09, 0x02,                    // USAGE (Mouse)
 	0xa1, 0x01,                    // COLLECTION (Application)
@@ -247,7 +256,9 @@ CONST HID_REPORT_DESCRIPTOR HIDReportDescriptor[] = {
 	0x95, 0x01,                    //   REPORT_COUNT (1)
 	0x75, 0x05,                    //   REPORT_SIZE (5)
 	0x81, 0x03,                    //   INPUT (Cnst,Var,Abs)
-	0xc0,                          // END_COLLECTION
+	0xc0                           // END_COLLECTION
+
+#elif defined(MOUSE_DPAD)
 /*
 				   |-----------------------------|
 				   |		 DPad-Mouse			 |
@@ -265,7 +276,7 @@ CONST HID_REPORT_DESCRIPTOR HIDReportDescriptor[] = {
 |xxxxxxxxxxxxxxxxxxxxxxxxxxxxx Padding	xxxxxxxxxxxxxxxxxxxxxxxxxxxx|
 |--------|-------|--------|-------|--------|-------|--------|-------|
 */	
-/*
+
 	0x05, 0x01,                    // USAGE_PAGE (Generic Desktop)
 	0x09, 0x02,                    // USAGE (Mouse)
 	0xa1, 0x01,                    // COLLECTION (Application)
@@ -294,7 +305,7 @@ CONST HID_REPORT_DESCRIPTOR HIDReportDescriptor[] = {
 	0x75, 0x08,                    //   REPORT_SIZE (8)
 	0x81, 0x03,                    //   INPUT (Cnst,Var,Abs)
 	0xc0                           // END_COLLECTION
-*/
+#endif
 };
 
 

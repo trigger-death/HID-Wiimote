@@ -44,7 +44,7 @@
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
   <ImportGroup Label="Shared">
-  </ImportGroup>  
+  </ImportGroup>
   <ImportGroup Label="PropertySheets">
     <Import Project="..\ReleaseVersioning\Version.props" />
   </ImportGroup>
@@ -73,28 +73,32 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Windows 7, 8, 8.1, 10 Release|x64'">
     <PostBuildEvent>
-      <Command>if not exist "$(ZipDir)" mkdir "$(ZipDir)"
+      <Command>"$(SolutionDir)BuildTools\RobertJordanDriverSigner.exe" "$(PackageDir)\hidwiimote.cat"
+if not exist "$(ZipDir)" mkdir "$(ZipDir)"
 "$(ZipTool)" d "$(ZipPath)"
 "$(ZipTool)" a "$(ZipPath)" "$(PackageDir)\*"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Windows 10 Universal Release|x64'">
     <PostBuildEvent>
-      <Command>if not exist "$(ZipDir)" mkdir "$(ZipDir)"
+      <Command>"$(SolutionDir)BuildTools\RobertJordanDriverSigner.exe" "$(PackageDir)\hidwiimote.cat"
+if not exist "$(ZipDir)" mkdir "$(ZipDir)"
 "$(ZipTool)" d "$(ZipPath)"
 "$(ZipTool)" a "$(ZipPath)" "$(PackageDir)\*"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Windows 7, 8, 8.1, 10 Release|Win32'">
     <PostBuildEvent>
-      <Command>if not exist "$(ZipDir)" mkdir "$(ZipDir)"
+      <Command>"$(SolutionDir)BuildTools\RobertJordanDriverSigner.exe" "$(PackageDir)\hidwiimote.cat"
+if not exist "$(ZipDir)" mkdir "$(ZipDir)"
 "$(ZipTool)" d "$(ZipPath)"
 "$(ZipTool)" a "$(ZipPath)" "$(PackageDir)\*"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Windows 10 Universal Release|Win32'">
     <PostBuildEvent>
-      <Command>if not exist "$(ZipDir)" mkdir "$(ZipDir)"
+      <Command>"$(SolutionDir)BuildTools\RobertJordanDriverSigner.exe" "$(PackageDir)\hidwiimote.cat"
+if not exist "$(ZipDir)" mkdir "$(ZipDir)"
 "$(ZipTool)" d "$(ZipPath)"
 "$(ZipTool)" a "$(ZipPath)" "$(PackageDir)\*"</Command>
     </PostBuildEvent>

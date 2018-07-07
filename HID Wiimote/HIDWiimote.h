@@ -19,8 +19,14 @@ Abstract:
 
 #include "Trace.h"
 
+//#define GAMEPAD
 //#define MOUSE_DPAD
 //#define MOUSE_IR
+#define PASSTHROUGH
+
+// No HID Report Descriptors
+//#define GAMEPAD_MOUSE_IR
+
 
 //Forward Declarations
 typedef struct _DEVICE_CONTEXT DEVICE_CONTEXT, * PDEVICE_CONTEXT;

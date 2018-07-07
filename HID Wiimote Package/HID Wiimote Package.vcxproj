@@ -157,6 +157,12 @@
     <Inf2CatUseLocalTime>true</Inf2CatUseLocalTime>
   </PropertyGroup>
   <ItemGroup>
+    <FilesToPackage Include="..\HID Wiimote\x64\Windows7,8,8.1,10Debug\vc141.pdb">
+      <PackageRelativeDirectory>Debug</PackageRelativeDirectory>
+    </FilesToPackage>
+    <FilesToPackage Include="..\HID Wiimote\x64\Windows10UniversalDebug\vc141.pdb">
+      <PackageRelativeDirectory>Debug</PackageRelativeDirectory>
+    </FilesToPackage>
     <FilesToPackage Include="DIFx\$(PlatformShortName)\dpinst.exe" Condition="'$(Configuration)|$(Platform)'=='Windows 7, 8, 8.1, 10 Release|Win32'">
     </FilesToPackage>
     <FilesToPackage Include="DIFx\$(PlatformShortName)\dpinst.exe" Condition="'$(Configuration)|$(Platform)'=='Windows 10 Universal Release|Win32'">
@@ -165,22 +171,16 @@
     </FilesToPackage>
     <FilesToPackage Include="DIFx\$(PlatformShortName)\dpinst.exe" Condition="'$(Configuration)|$(Platform)'=='Windows 10 Universal Release|x64'">
     </FilesToPackage>
-    <FilesToPackage Include="..\$(Platform)\$(ConfigurationName)\HIDMiniport.pdb" Condition="'$(Configuration)|$(Platform)'=='Windows 7, 8, 8.1, 10 Debug|x64'">
+    <FilesToPackage Include="..\x64\Windows7,8,8.1,10Debug\HIDMiniport.pdb">
       <PackageRelativeDirectory>Debug</PackageRelativeDirectory>
     </FilesToPackage>
-    <FilesToPackage Include="..\$(Platform)\$(ConfigurationName)\HIDMiniport.pdb" Condition="'$(Configuration)|$(Platform)'=='Windows 10 Universal Debug|x64'">
+    <FilesToPackage Include="..\x64\Windows10UniversalDebug\HIDMiniport.pdb">
       <PackageRelativeDirectory>Debug</PackageRelativeDirectory>
     </FilesToPackage>
-    <FilesToPackage Include="..\$(Platform)\$(ConfigurationName)\HIDWiimote.pdb" Condition="'$(Configuration)|$(Platform)'=='Windows 7, 8, 8.1, 10 Debug|x64'">
+    <FilesToPackage Include="..\x64\Windows7,8,8.1,10Debug\HIDWiimote.pdb">
       <PackageRelativeDirectory>Debug</PackageRelativeDirectory>
     </FilesToPackage>
-    <FilesToPackage Include="..\$(Platform)\$(ConfigurationName)\HIDWiimote.pdb" Condition="'$(Configuration)|$(Platform)'=='Windows 10 Universal Debug|x64'">
-      <PackageRelativeDirectory>Debug</PackageRelativeDirectory>
-    </FilesToPackage>
-    <FilesToPackage Include="..\HID Wiimote\$(Platform)\$(ConfigurationName)\vc140.pdb" Condition="'$(Configuration)|$(Platform)'=='Windows 7, 8, 8.1, 10 Debug|x64'">
-      <PackageRelativeDirectory>Debug</PackageRelativeDirectory>
-    </FilesToPackage>
-    <FilesToPackage Include="..\HID Wiimote\$(Platform)\$(ConfigurationName)\vc140.pdb" Condition="'$(Configuration)|$(Platform)'=='Windows 10 Universal Debug|x64'">
+    <FilesToPackage Include="..\x64\Windows10UniversalDebug\HIDWiimote.pdb">
       <PackageRelativeDirectory>Debug</PackageRelativeDirectory>
     </FilesToPackage>
     <FilesToPackage Include="@(Inf->'%(CopyOutput)')" Condition="'@(Inf)'!=''" />
@@ -232,9 +232,15 @@
       <PackageRelativeDirectory>
       </PackageRelativeDirectory>
     </FilesToPackage>
-    <FilesToPackage Include="..\HID Wiimote Control Center\bin\$(PlatformShortName)\Debug\HID Wiimote Control Center.exe" Condition="'$(Configuration)'=='Windows 7, 8, 8.1, 10 Debug'" />
+    <FilesToPackage Include="..\HID Wiimote Control Center\bin\x64\Debug\HID Wiimote Control Center.exe">
+      <PackageRelativeDirectory>
+      </PackageRelativeDirectory>
+    </FilesToPackage>
     <FilesToPackage Include="..\HID Wiimote Control Center\bin\$(PlatformShortName)\Release\HID Wiimote Control Center.exe" Condition="'$(Configuration)'=='Windows 7, 8, 8.1, 10 Release'" />
-    <FilesToPackage Include="..\HID Wiimote User Mode\$(PlatformShortName)\Debug\HID Wiimote User Mode.dll" Condition="'$(Configuration)'=='Windows 7, 8, 8.1, 10 Debug'" />
+    <FilesToPackage Include="..\HID Wiimote User Mode\x64\Debug\HID Wiimote User Mode.dll">
+      <PackageRelativeDirectory>
+      </PackageRelativeDirectory>
+    </FilesToPackage>
     <FilesToPackage Include="..\HID Wiimote User Mode\$(PlatformShortName)\Release\HID Wiimote User Mode.dll" Condition="'$(Configuration)'=='Windows 7, 8, 8.1, 10 Release'" />
   </ItemGroup>
   <ItemGroup>

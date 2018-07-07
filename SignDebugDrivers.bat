@@ -1,0 +1,1 @@
+start "" "BuildTools\RobertJordanDriverSigner.exe" "x64\Windows7,8,8.1,10Debug\HID Wiimote Package\hidwiimote.cat"

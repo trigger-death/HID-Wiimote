@@ -19,6 +19,8 @@ Abstract:
 
 #include "Trace.h"
 
+#define PASSTHROUGH
+
 DRIVER_INITIALIZE DriverEntry;
 DRIVER_ADD_DEVICE AddDevice;
 _Dispatch_type_(IRP_MJ_OTHER)

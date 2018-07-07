@@ -70,7 +70,19 @@ WiimoteSettingsLoad(
 	}
 
 	// Load each Setting
+#if defined(GAMEPAD)
+	DeviceContext->WiimoteContext.Settings.Mode = GamePad;
+#elif defined(MOUSE_IR)
+	DeviceContext->WiimoteContext.Settings.Mode = IRMouse;
+#elif defined(MOUSE_DPAD)
+	DeviceContext->WiimoteContext.Settings.Mode = DPadMouse;
+#elif defined(GAMEPAD_MOUSE_IR)
+	DeviceContext->WiimoteContext.Settings.Mode = GamepadAndIRMouse;
+#elif defined(PASSTHROUGH)
 	DeviceContext->WiimoteContext.Settings.Mode = PassThrough;
+#else
+# error "A Preprocessor mode must be specified in HIDWiimote.h"
+#endif
 	//LoadWiimoteDriverModeValue(Key, &DriverModeValueName, Gamepad, &DeviceContext->WiimoteContext.Settings.Mode);
 	LoadBooleanValue(Key, &EnableWiimoteXAxisAccelerometerValueName, TRUE, &DeviceContext->WiimoteContext.Settings.EnableWiimoteXAxisAccelerometer);
 	LoadBooleanValue(Key, &EnableWiimoteYAxisAccelerometerValueName, TRUE, &DeviceContext->WiimoteContext.Settings.EnableWiimoteYAxisAcceleromenter);

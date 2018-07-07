@@ -60,5 +60,7 @@ NTSTATUS BluetoothTransferToDevice(_In_ PDEVICE_CONTEXT DeviceContext, _In_ WDFR
 
 NTSTATUS BluetoothStartContiniousReader(_In_ PDEVICE_CONTEXT DeviceContext);
 
-NTSTATUS BluetoothReadReport(_In_ WDFREQUEST ReadRequest, _In_ PDEVICE_CONTEXT DeviceContext, _Out_ PULONG_PTR ReadSize);
-NTSTATUS BluetoothWriteReport(_In_ WDFREQUEST WriteRequest, _In_ PDEVICE_CONTEXT DeviceContext);
+NTSTATUS BluetoothReadReportUnused(_In_ WDFREQUEST ReadRequest, _In_ PDEVICE_CONTEXT DeviceContext, _In_ size_t BufferSize, _Out_ PULONG_PTR BytesWritten);
+NTSTATUS BluetoothReadReport(_In_ PDEVICE_CONTEXT DeviceContext, _Inout_updates_all_(BufferSize) PVOID Buffer, _In_ size_t BufferSize, _Out_ PSIZE_T BytesWritten);
+NTSTATUS BluetoothSetOutputReport(_In_ WDFREQUEST WriteRequest, _In_ PDEVICE_CONTEXT DeviceContext, _In_ size_t InputBufferLength);
+NTSTATUS BluetoothWriteReport(_In_ WDFREQUEST WriteRequest, _In_ PDEVICE_CONTEXT DeviceContext, _In_ size_t WriteLength);

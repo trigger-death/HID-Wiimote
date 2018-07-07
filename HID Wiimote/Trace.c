@@ -33,7 +33,8 @@ Trace(
 
 		if(NT_SUCCESS(Status))
 		{
-			DbgPrint("Trace Wiimote: %s\n", DebugMessageBuffer);
+			DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_ERROR_LEVEL, "Trace Wiimote: %s\n", DebugMessageBuffer);
+			//DbgPrint("Trace Wiimote: %s\n", DebugMessageBuffer);
 		}
 	}
 
